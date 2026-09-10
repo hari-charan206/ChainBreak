@@ -16,22 +16,34 @@ This document is the binding contract between frontend and backend agents/develo
 
 ## 2. Agent Ownership
 
+> **v4 note:** the rows below marked ~~struck~~ are retired by the v4 amendment (Section 17). New v4 ownership rows follow the table. Section 17 supersedes this table and Sections 4-9, 12 and 15 where they conflict.
+
 | Area | Owner | Notes |
 |---|---|---|
-| Dataset replay pipeline (`dataset_replay.py`) | Backend | Owns locked demo-window timestamp, 30x multiplier |
-| Threshold derivation (`threshold_derivation.py`) | Backend | Offline script, run once, output feeds anomaly detection |
-| Anomaly detection (`anomaly_detection.py`) | Backend | Isolation Forest, dataset-agnostic loader interface |
+| ~~Dataset replay pipeline (`dataset_replay.py`)~~ | Backend | RETIRED in v4 — file deleted |
+| ~~Threshold derivation (`threshold_derivation.py`)~~ | Backend | RETIRED in v4 — replaced by user-set + cold-start thresholds and the live per-binding Isolation Forest |
+| Anomaly detection (`anomaly_detection.py`) | Backend | Isolation Forest, ~~dataset-agnostic loader interface~~ live per-binding training (v4) |
 | Propagation estimation (`propagation.py`) | Backend | Probabilistic/trend model over sensor + dependency strength |
 | Intervention ranking (`intervention_ranking.py`) | Backend | Hardcoded heuristic weights (Section 11) |
 | Explanation payload (`explanation.py`) | Backend | Must match ExplanationDrawer schema (Section 7) |
-| Validation metrics (`validation.py`) | Backend | Scoped precision/recall (Section 12) |
-| MQTT ingestion (`mqtt_subscriber.py`) | Backend | Built last, time-boxed, never load-bearing |
-| Dependency graph UI | Frontend | React Flow, fixed N1–N6 layout only — no auto-generated graphs |
-| Sensor trend charts | Frontend | Recharts, per-node mapped sensors |
+| Validation metrics (`validation.py`) | Backend | ~~Scoped precision/recall (Section 12)~~ v4: cross-detector agreement with mandatory scope label (Section 17) |
+| ~~MQTT ingestion (`mqtt_subscriber.py`)~~ | Backend | v3: built last, time-boxed. v4: built and load-bearing — dynamic topic→node lookup |
+| Dependency graph UI | Frontend | React Flow, ~~fixed N1–N6 layout only~~ v4: renders any environment's nodes/edges from the polled payload |
+| Sensor trend charts | Frontend | Recharts, ~~per-node mapped sensors~~ v4: per-bound-sensor trends + thresholds from the payload |
 | Explanation drawer | Frontend | Renders heuristic score breakdown verbatim from backend payload |
 | Before/after view | Frontend | Renders backend-computed impact number, does not compute it client-side |
 | Validation metrics panel | Frontend | Must display backend's scope label, not just the number |
 | Polling hook | Frontend | ~2s interval, all state sync |
+| Auth API (`api/auth.py`, `security.py`) | Backend | v4 — JWT signup/login/logout (Section 17) |
+| Environment API (`api/environments.py`, `api/deps.py`) | Backend | v4 — ownership-scoped CRUD + `/state` (Section 17) |
+| Data models (`models/users.py`, `environments.py`, `nodes.py`, `edges.py`, `sensor_bindings.py`, `db.py`) | Backend | v4 — SQLite schema per Section 17 |
+| Evaluation engine (`engine.py`) | Backend | v4 — assembles the generic `/state` payload |
+| Auth pages + auth context (`pages/Login|Signup`, `hooks/useAuth`) | Frontend | v4 |
+| Environment picker + builder (`pages/EnvironmentsPage`, `EnvironmentBuilderPage`) | Frontend | v4 — simple forms, no drag-and-drop graph editor |
+| Router + guards (`App.tsx`) | Frontend | v4 — react-router-dom, per Section 12.3 confirmation |
+| Briefing page (`pages/Briefing`, `components/Briefing/*`) | Frontend | v4 — Framer Motion whileInView + GSAP ScrollTrigger (scrub) + Lenis, briefing route only |
+| Operator fallback (`ops/fallback_publish.py`) | Operator | v4 — external to the app UI, rehearsed, never a product feature |
+| Wokwi sketch (`wokwi/sketch.ino`) | Operator | v4 — configurable topics bound via the builder |
 
 Neither side invents fields, node IDs, or scoring logic the other side didn't publish here first.
 
@@ -328,3 +340,166 @@ Give the exact same `CONTRACT.md` to both agents, then scope each one explicitly
 > You own `frontend/`. Implement the UI exactly against CONTRACT.md. Do not create, replace, or modify the Python backend.
 
 If either agent needs a change to the contract itself (a new field, a renamed endpoint, a different schema), that change is proposed and made once, centrally, in this file — then re-shared with both agents. It is not patched independently inside `frontend/` or `backend/`.
+
+---
+
+## 17. v4 Amendment — Generic Platform + Auth + Briefing Page
+
+This amendment supersedes v3 Sections 4–9, 12, 15 and the replay parts of
+Section 9 wherever they conflict. v3 text is preserved above for history.
+Source: build prompt v4 (Generic Platform + Auth + Briefing Page). The five
+Section 12 open items were confirmed before any code was written:
+
+| # | Decision | Locked choice |
+|---|---|---|
+| 12.1 | Session mechanism | **JWT, stateless** (Authorization: Bearer; 7-day expiry; HS256) |
+| 12.2 | Password hashing | **bcrypt directly** (passlib is unmaintained and fragile on Python 3.13+; the venv runs 3.14) |
+| 12.3 | Router | **react-router-dom** |
+| 12.4 | Cold-start thresholds | **warning = baseline × 1.2, failure = baseline × 1.5** (user-set thresholds always win; with no baseline and no overrides, thresholds stay null and the node stays healthy until the IF calibrates — the warm-up disclosure covers this) |
+| 12.5 | Broker topology | **Shared broker.hivemq.com, namespaced topics** (convention `chainbreak/{environmentId}/{nodeId}/...`; ANY bound topic string resolves via the DB lookup — the topic map is the database, not a constant) |
+
+### 17.1 Removed in v4
+
+- `models/graph_schema.py` (fixed N1–N6, SWaT tags) — deleted.
+- `ingestion/dataset_replay.py` and all replay endpoints — deleted.
+  `backend/data/attack.csv` remains on disk for history only and is not
+  imported anywhere in `app/`.
+- `/api/failure/simulate` and the "Simulate Failure" button — gone. Node
+  state changes ONLY from live MQTT values (Section 6.1). The operator
+  fallback (`ops/fallback_publish.py`) is external to the app by design.
+- `/api/graph`, `/api/sensors/{node_id}`, `/api/replay/*`, and the
+  multi-endpoint polling shape are superseded by the single `/state` payload.
+- v3's `full_dataset_available` secondary fact retires with the dataset.
+
+### 17.2 Data model (SQLite)
+
+```
+users(id, email UNIQUE, password_hash, created_at)
+environments(id, user_id→users, name, industry_template, created_at,
+             UNIQUE(user_id, name))
+nodes(id, environment_id→environments, display_name, node_type,
+      status CHECK healthy|warning|failed|offline, position_x, position_y)
+edges(id, environment_id→environments, source_node_id→nodes,
+      target_node_id→nodes, relationship_type, criticality 0–1 DEFAULT 0.5,
+      UNIQUE(environment_id, source, target))
+sensor_bindings(id, node_id→nodes, mqtt_topic UNIQUE, unit,
+      warning_threshold, failure_threshold)
+sensor_readings(id, binding_id→sensor_bindings, value, created_at)
+```
+
+### 17.3 Endpoints (replace v3 Section 6)
+
+```
+POST   /api/auth/signup            {email, password} → 201 {token, user}
+POST   /api/auth/login             {email, password} → 200 {token, user}
+POST   /api/auth/logout            → {ok}
+
+GET    /api/environments           → {environments: [...summaries]}
+POST   /api/environments           {name, industry_template} → 201
+GET    /api/environments/:id       → detail (nodes, edges, sensor_bindings)
+DELETE /api/environments/:id
+POST   /api/environments/:id/nodes           {display_name, node_type}
+PATCH  /api/environments/:id/nodes/:node_id  {display_name?, node_type?}
+DELETE /api/environments/:id/nodes/:node_id
+POST   /api/environments/:id/edges           {source, target, relationship_type, criticality}
+DELETE /api/environments/:id/edges/:edge_id
+POST   /api/environments/:id/sensor-bindings {node_id, mqtt_topic, unit,
+                                              warning_threshold?, failure_threshold?,
+                                              baseline?}
+PATCH  /api/environments/:id/sensor-bindings/:binding_id {warning_threshold?, failure_threshold?}
+DELETE /api/environments/:id/sensor-bindings/:binding_id
+PATCH  /api/environments/:id                 {name?, industry_template?}   (409 on duplicate name)
+
+GET    /api/environments/:id/state  → the polled payload (17.4), ~2s interval
+GET    /api/methods                 → honesty labels for the three components
+GET    /api/health
+```
+
+All environment routes require `Authorization: Bearer <jwt>` and enforce
+exactly one check: the environment's `user_id` must equal the token's
+subject (404, not 403, when it does not — no existence leak). No other
+permission logic exists in v1.
+
+### 17.4 `GET /api/environments/:id/state` (polled every ~2s)
+
+```json
+{
+  "nodes": [{ "id": 1, "display_name": "...", "node_type": "pump",
+              "status": "failed", "current_value": 82.0,
+              "last_updated": "...", "anomaly_score": 0.0, "warm_up": false,
+              "at_risk": true, "eta_seconds": 300.0,
+              "predicted_path": ["Cooling Pump", "Treatment Unit"],
+              "position_x": 60.0, "position_y": 160.0,
+              "bindings": [{ "topic": "...", "unit": "degC",
+                             "warning_threshold": 60.0, "failure_threshold": 75.0,
+                             "state": "failed", "if_state": null,
+                             "if_score": null, "calibrated": false,
+                             "warm_up": true, "samples": 4, "trend": [ ... ] }] }],
+  "edges": [{ "id": 1, "source": 1, "target": 2, "relationship_type": "feeds",
+              "criticality": 0.9, "active_cascade": true }],
+  "active_cascade": { "origin_node_id": 1, "origin_node_name": "...",
+                      "affected_nodes": [2], "affected_node_names": ["..."],
+                      "active_edges": ["1->2"], "method": "... (not trained)" },
+  "intervention": { "recommended_node_id": 2, "recommended_node_name": "...",
+                    "score": 0.58, "score_breakdown": { "...": 0.0 },
+                    "explanation": "...", "method": "heuristic..." },
+  "ranked": [ "...same entries as v3 Section 7 ranking, with node_name and downstream_node_names..." ],
+  "before_after": { "before": {"downstream_systems_affected": 1},
+                    "after": {"downstream_systems_affected": 1},
+                    "headline": "Downstream systems affected: 1 -> 1",
+                    "method": "projected footprint..." } ,
+  "validation_metrics": { "precision": 0.0, "recall": 0.0,
+                          "scope_label": "Detector agreement ... NOT accuracy against labeled failures",
+                          "warm_up": false, "bindings_tracked": 2 }
+}
+```
+
+- `active_cascade`, `intervention`, `before_after` are **null** when there
+  is no live cascade. `before_after` is a *projection* computed by the
+  backend while a cascade is active (acting on the recommended node contains
+  the cascade; already-reached nodes count as affected) — it replaces v3's
+  `/api/impact/before-after`.
+- `validation_metrics` is **null** before any data exists, carries the
+  warm-up disclosure (`warm_up: true`, no numbers) until every tracked
+  binding's Isolation Forest has calibrated (>= 30 live samples), then shows
+  cross-detector agreement with the mandatory scope label. It is never
+  presented as accuracy against labeled failures — no labeled ground truth
+  exists in live mode.
+- A node with bound topics but no data yet reports `status: "offline"`.
+- The IF's warning cutpoint is the 99th percentile of its own training
+  scores (data-derived, never invented); failure is beyond the historical
+  maximum (normalized score >= 1.0). Thresholds and method labels always
+  travel with the payload; the frontend renders them verbatim.
+
+### 17.5 Status definitions, scoring, disclosure — unchanged
+
+v3 Section 8 status colors/cues, Section 11 locked weights
+(0.35/0.30/0.20/0.15, "FOCUS HERE FIRST"), and the Section 13 boundaries
+(backend computes / frontend renders, polling only, disclosures surfaced,
+~300-500ms transitions) carry over **unchanged**.
+
+### 17.6 Routes
+
+```
+/                      Briefing (public; Framer Motion whileInView + GSAP
+                       ScrollTrigger scrub + Lenis — this route ONLY;
+                       dashboard scrolls natively, no scroll-hijacking)
+/login, /signup        Auth forms (public; redirect to /environments when
+                       already signed in)
+/environments          Picker (auth)
+/environments/new      Builder (auth; simple forms, no graph editor)
+/dashboard/:environmentId  Dashboard (auth; scoped, no simulate controls)
+```
+
+### 17.7 Integration checklist (v4)
+
+- [x] Signup → login → environments all return JWTs; wrong password = 401; duplicate email = 409
+- [x] Every environment route 401s without a token and 404s for other users' environments
+- [x] Cold-start thresholds = baseline ×1.2 / ×1.5 (verified: 50 → 60/75)
+- [x] MQTT ingestion resolves topics dynamically from sensor_bindings (no restart needed for new bindings)
+- [x] Sustained values above the failure threshold flip the node to failed within one poll
+- [x] Propagation marks the user's edges active_cascade; ranking uses the locked weights (0.58 verified for the reference two-node case)
+- [x] Warm-up disclosure shows instead of fake metrics; scope label always present
+- [x] No simulate/replay control exists anywhere in the UI
+- [x] Lenis + ScrollTrigger exist only on `/`; dashboard uses native scrolling
+- [x] Backend smoke suite green (12 tests; real-broker test auto-skips when 1883 is blocked)

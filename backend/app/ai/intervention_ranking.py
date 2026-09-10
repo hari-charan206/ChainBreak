@@ -1,4 +1,5 @@
-"""Intervention ranking — LOCKED heuristic (CONTRACT.md Section 11).
+"""Intervention ranking — LOCKED heuristic (v3 Section 11, carried to v4
+unchanged per build prompt Section 7.3).
 
 score = 0.35 x downstream_count_norm
       + 0.30 x propagation_prob
@@ -7,13 +8,16 @@ score = 0.35 x downstream_count_norm
 
 Weights are locked starting values. Any tuning must be flagged in
 CONTRACT.md, never silently changed here. Explicitly a heuristic scoring
-model — never described as trained or learned (v1).
+model — never described as trained or learned.
 """
 
 from __future__ import annotations
 
-from app.ai.propagation import ETA_CAP_SECONDS, reachable_downstream
-from app.models.graph_schema import EDGES, NODES, NODE_BY_ID
+from app.ai.propagation import (
+    ETA_CAP_SECONDS,
+    incoming_criticality,
+    reachable_downstream,
+)
 
 WEIGHTS = {
     "downstream_count": 0.35,
@@ -22,24 +26,27 @@ WEIGHTS = {
     "criticality": 0.15,
 }
 
-# Criticality of the worst edge leaving each node's incoming path — for the
-# fixed chain we use the node's own incoming edge criticality as its
-# dependency criticality factor (N1 has none -> 0).
-INCOMING_CRITICALITY = {"N1": 0.0}
-for _e in EDGES:
-    INCOMING_CRITICALITY[_e["to"]] = _e["criticality"]
+METHOD_LABEL = "heuristic scoring model (locked v1 weights)"
 
 
-def rank_interventions(evaluation: dict, predicted: dict,
-                       failed_countdown: dict | None = None) -> list[dict]:
+def rank_interventions(evaluation: dict[int, dict],
+                       predicted: dict[int, dict],
+                       edges: list[dict],
+                       node_count: int) -> list[dict]:
     """Rank candidate intervention nodes by the locked heuristic.
 
     Candidates: any node currently warning/failed, plus any node with an
-    active propagation prediction. failed_countdown maps node_id -> seconds
-    until simulated failure for countdown-normalized time-to-impact.
+    active propagation prediction — same rule as v3, now over any graph.
     """
-    failed_countdown = failed_countdown or {}
-    candidates: set[str] = set()
+    if node_count <= 1:
+        return []
+
+    crit_by_node = incoming_criticality(edges)
+    adj = {}
+    for e in edges:
+        adj.setdefault(e["source_node_id"], []).append(e)
+
+    candidates: set[int] = set()
     for nid, ev in evaluation.items():
         if ev["status"] in ("warning", "failed"):
             candidates.add(nid)
@@ -47,18 +54,13 @@ def rank_interventions(evaluation: dict, predicted: dict,
 
     ranked = []
     for nid in candidates:
-        node = NODE_BY_ID[nid]
-        downstream = reachable_downstream(nid)
-        downstream_count_norm = (len(downstream) /
-                                 (len(NODES) - 1))
+        downstream = reachable_downstream(adj, nid)
+        downstream_count_norm = len(downstream) / (node_count - 1)
         pred = predicted.get(nid, {})
         propagation_prob = float(pred.get("propagation_prob", 0.0))
-        if nid in failed_countdown:
-            eta = float(failed_countdown[nid])
-        else:
-            eta = float(pred.get("eta_seconds", ETA_CAP_SECONDS))
+        eta = float(pred.get("eta_seconds", ETA_CAP_SECONDS))
         time_to_impact_inv_norm = 1.0 - min(eta / ETA_CAP_SECONDS, 1.0)
-        criticality = INCOMING_CRITICALITY.get(nid, 0.0)
+        criticality = crit_by_node.get(nid, 0.0)
 
         score = (WEIGHTS["downstream_count"] * downstream_count_norm
                  + WEIGHTS["propagation_prob"] * propagation_prob
@@ -67,7 +69,6 @@ def rank_interventions(evaluation: dict, predicted: dict,
 
         ranked.append({
             "node_id": nid,
-            "display_name": node["display_name"],
             "score": round(score, 4),
             "breakdown": {
                 "downstream_count_norm": round(downstream_count_norm, 4),
@@ -78,7 +79,7 @@ def rank_interventions(evaluation: dict, predicted: dict,
             "weights": WEIGHTS,
             "eta_seconds": round(eta, 1),
             "downstream_nodes": downstream,
-            "method": "heuristic scoring model (locked v1 weights)",
+            "method": METHOD_LABEL,
         })
 
     ranked.sort(key=lambda r: -r["score"])

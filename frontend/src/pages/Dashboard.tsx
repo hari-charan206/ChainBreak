@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, type BeforeAfterPayload, type CascadePayload,
-         type ExplanationPayload, type GraphPayload,
-         type RankedIntervention, type ReplayState, type SensorPayload,
-         type ValidationPayload } from "../lib/api";
+import { Link, useParams } from "react-router-dom";
+import { api, type EnvironmentState } from "../lib/api";
 import { usePolling } from "../hooks/usePolling";
 import { StatusBar } from "../components/StatusBar/StatusBar";
 import { DependencyGraph } from "../components/DependencyGraph/DependencyGraph";
@@ -11,97 +9,80 @@ import { ExplanationDrawer } from "../components/ExplanationDrawer/ExplanationDr
 import { BeforeAfterView } from "../components/BeforeAfterView/BeforeAfterView";
 import { ValidationMetrics } from "../components/ValidationMetrics/ValidationMetrics";
 
-const POLL_MS = 2000; // contract: ~2s, no faster
+const POLL_MS = 2000; // contract: ~2s, no faster (Section 13)
 
+// Dashboard (Section 5.5): existing components, now parameterized by
+// :environmentId. Live values arrive only via Wokwi -> MQTT -> backend ->
+// this 2s poll. There is NO simulate-failure or replay control anywhere —
+// by design (Section 6.1).
 export default function Dashboard() {
-  const [selectedNode, setSelectedNode] = useState<string | null>("N3");
+  const { environmentId } = useParams<{ environmentId: string }>();
+  const [selectedNode, setSelectedNode] = useState<number | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [showImpact, setShowImpact] = useState(false);
-  const [fullMetrics, setFullMetrics] = useState<Record<string, unknown> | null>(null);
+  const [showImpact, setShowImpact] = useState(true);
+  const [envName, setEnvName] = useState<string | null>(null);
 
-  // ---- 2s polling state ----
-  const graph = usePolling<GraphPayload>(api.graph, POLL_MS);
-  const replay = usePolling<ReplayState>(api.replayState, POLL_MS);
-  const cascade = usePolling<CascadePayload>(api.cascade, POLL_MS);
-  const ranking = usePolling<{ ranked: RankedIntervention[]; note: string | null }>(
-    api.ranking, POLL_MS,
-  );
-  const impact = usePolling<BeforeAfterPayload>(api.beforeAfter, POLL_MS);
-  const validation = usePolling<ValidationPayload>(api.validation, POLL_MS);
-  const sensor = usePolling<SensorPayload | null>(
-    useCallback(() => (selectedNode ? api.sensors(selectedNode) : Promise.resolve(null)),
-      [selectedNode]),
-    POLL_MS,
-  );
-  const explanation = usePolling<ExplanationPayload | null>(
+  const state = usePolling<EnvironmentState | null>(
     useCallback(
-      () => (drawerOpen && selectedNode ? api.explanation(selectedNode) : Promise.resolve(null)),
-      [drawerOpen, selectedNode],
+      () => (environmentId ? api.state(environmentId) : Promise.resolve(null)),
+      [environmentId],
     ),
     POLL_MS,
   );
 
-  // fetch full-dataset metrics once, on demand only
+  // environment name for the header (fetched once per env)
   useEffect(() => {
-    if (fullMetrics === null) {
-      api.fullValidation().then((m) => m && setFullMetrics(m));
-    }
-  }, [fullMetrics]);
+    setEnvName(null);
+    if (!environmentId) return;
+    let cancelled = false;
+    api.environment(environmentId).then((d) => {
+      if (!cancelled && d) setEnvName(d.name);
+    });
+    return () => { cancelled = true; };
+  }, [environmentId]);
 
-  const focusNode = ranking?.ranked?.[0]?.label === "FOCUS HERE FIRST"
-    ? ranking.ranked[0].node_id
-    : null;
+  // keep a sensible selection when the payload updates
+  useEffect(() => {
+    if (!state) return;
+    if (selectedNode !== null && state.nodes.some((n) => n.id === selectedNode)) return;
+    const focus = state.intervention?.recommended_node_id;
+    setSelectedNode(focus ?? state.nodes[0]?.id ?? null);
+  }, [state, selectedNode]);
 
-  const handleStart = async () => {
-    setBusy(true);
-    await api.replayStart();
-    setBusy(false);
-  };
-  const handleStop = async () => {
-    setBusy(true);
-    await api.replayStop();
-    setBusy(false);
-  };
-  const handleReset = async () => {
-    setBusy(true);
-    await api.replayReset();
-    setShowImpact(false);
-    setBusy(false);
-  };
-  const handleSimulate = async () => {
-    setBusy(true);
-    await api.simulateFailure();
-    setBusy(false);
-  };
-  const handleApply = async (nodeId: string) => {
-    setBusy(true);
-    await api.applyIntervention(nodeId);
-    setDrawerOpen(false);
-    setShowImpact(true);
-    setBusy(false);
-  };
+  const selected = state?.nodes.find((n) => n.id === selectedNode) ?? null;
+  const cascade = state?.active_cascade ?? null;
 
-  const replayRunning = replay?.running ?? false;
+  // empty / error states
+  if (state !== null && state.nodes.length === 0) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-3 bg-[#0B0E14]">
+        <div className="text-sm font-bold text-[#E8ECF4]">
+          {envName ?? "This environment"} has no nodes yet
+        </div>
+        <div className="max-w-sm text-center text-xs text-[#5A6472]">
+          Add nodes, connect them, and bind a Wokwi sensor topic in the
+          Environment Builder — the dashboard comes alive once MQTT data flows.
+        </div>
+        <Link
+          to="/environments/new"
+          className="rounded-md border border-[#00E5FF]/50 bg-[#00E5FF]/15 px-4 py-2 text-xs font-bold text-[#00E5FF] transition hover:bg-[#00E5FF]/25"
+        >
+          Open Environment Builder
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen flex-col bg-[#0B0E14]">
-      <StatusBar
-        graph={graph}
-        replay={replay}
-        onStart={handleStart}
-        onStop={handleStop}
-        onReset={handleReset}
-        onSimulateFailure={handleSimulate}
-        busy={busy}
-      />
+      <StatusBar state={state} environmentName={envName} />
 
       <div className="flex min-h-0 flex-1">
-        {/* left/center graph */}
+        {/* left/center graph — native scroll behavior only, no Lenis here */}
         <div className="relative min-w-0 flex-1">
           <DependencyGraph
-            graph={graph}
-            focusNode={focusNode}
+            state={state}
+            focusNode={state?.intervention?.recommended_node_id ?? null}
             selectedNode={selectedNode}
             onSelectNode={(id) => {
               setSelectedNode(id);
@@ -112,38 +93,43 @@ export default function Dashboard() {
 
         {/* right panel */}
         <div className="flex w-[340px] shrink-0 flex-col gap-3 overflow-y-auto border-l border-[#232B3D] bg-[#0B0E14] p-3">
-          {/* warning banner */}
-          {cascade?.active_edges && cascade.active_edges.length > 0 && (
+          {/* cascade warning banner */}
+          {cascade && cascade.affected_nodes.length > 0 && (
             <div className="rounded-md border border-[#FF3B3B]/50 bg-[#FF3B3B]/10 px-3 py-2 text-[11px] font-semibold text-[#FF3B3B]">
-              ⚠ Cascade in progress: {cascade.active_edges.join(" → ")}
-            </div>
-          )}
-          {cascade?.synthetic && (
-            <div className="rounded-md border border-[#FFB800]/40 bg-[#FFB800]/5 px-3 py-2 text-[10px] leading-snug text-[#FFB800]">
-              Disclosure: {cascade.note}
+              ⚠ Cascade predicted from {cascade.origin_node_name}:{" "}
+              {cascade.affected_node_names.join(" → ")}
             </div>
           )}
 
-          {/* replay CTA */}
-          {!replayRunning && (
+          {/* disclosure note (Section 13: never swallow honesty fields) */}
+          {cascade && (
+            <div className="rounded-md border border-[#FFB800]/40 bg-[#FFB800]/5 px-3 py-2 text-[10px] leading-snug text-[#FFB800]">
+              Disclosure: {cascade.method}. Propagation beyond the detected
+              node is the model's prediction, not observed data.
+            </div>
+          )}
+
+          {/* live-data hint when nothing is flowing yet */}
+          {state && state.nodes.every((n) => n.status === "offline") && (
             <div className="rounded-md border border-[#00E5FF]/30 bg-[#00E5FF]/5 px-3 py-2 text-[11px] text-[#8A94A8]">
-              Replay ready from locked window {replay?.locked_start ?? ""} at{" "}
-              {replay?.locked_multiplier ?? 30}x. Press Start replay.
+              Waiting for live MQTT data on the bound topics. Publish from your
+              Wokwi sketch (or the operator fallback script) and nodes will
+              come online within ~2s.
             </div>
           )}
 
           {/* sensor trends for selected node */}
           <div className="min-h-[220px] rounded-lg border border-[#232B3D] bg-[#11151F]">
-            <SensorPanel sensor={sensor} />
+            <SensorPanel node={selected} />
           </div>
 
           {/* intervention ranking summary */}
-          {ranking?.ranked && ranking.ranked.length > 0 && (
+          {state && state.ranked.length > 0 && (
             <div className="rounded-lg border border-[#232B3D] bg-[#11151F] p-3">
               <div className="mb-2 text-[11px] font-bold tracking-wider text-[#8A94A8]">
                 INTERVENTION RANKING
               </div>
-              {ranking.ranked.slice(0, 4).map((r) => (
+              {state.ranked.slice(0, 4).map((r) => (
                 <button
                   key={r.node_id}
                   onClick={() => {
@@ -155,7 +141,7 @@ export default function Dashboard() {
                   }`}
                 >
                   <span className={r.label ? "font-bold text-[#FFD700]" : "text-[#E8ECF4]"}>
-                    #{r.rank} {r.node_id} {r.label ? "★ FOCUS HERE FIRST" : ""}
+                    #{r.rank} {r.node_name} {r.label ? "★ FOCUS HERE FIRST" : ""}
                   </span>
                   <span className="font-semibold text-[#00E5FF]">{r.score.toFixed(3)}</span>
                 </button>
@@ -189,9 +175,9 @@ export default function Dashboard() {
 
           <div className="min-h-[190px] rounded-lg border border-[#232B3D] bg-[#11151F]">
             {showImpact ? (
-              <BeforeAfterView impact={impact} />
+              <BeforeAfterView projection={state?.before_after ?? null} />
             ) : (
-              <ValidationMetrics validation={validation} fullMetrics={fullMetrics} />
+              <ValidationMetrics validation={state?.validation_metrics ?? null} />
             )}
           </div>
         </div>
@@ -199,11 +185,10 @@ export default function Dashboard() {
         {/* drawer */}
         <ExplanationDrawer
           open={drawerOpen}
-          explanation={explanation}
-          ranking={ranking?.ranked ?? []}
-          onApply={handleApply}
+          node={selected}
+          intervention={state?.intervention ?? null}
+          ranking={state?.ranked ?? []}
           onClose={() => setDrawerOpen(false)}
-          busy={busy}
         />
       </div>
     </div>
