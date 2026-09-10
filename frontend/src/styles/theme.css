@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --cb-bg: #0B0E14;
+  --cb-healthy: #00E5FF;
+  --cb-warning: #FFB800;
+  --cb-failed: #FF3B3B;
+  --cb-offline: #5A6472;
+  --cb-panel: #11151F;
+  --cb-panel-2: #161B27;
+  --cb-border: #232B3D;
+  --cb-text: #E8ECF4;
+  --cb-text-dim: #8A94A8;
+  --cb-gold: #FFD700;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--cb-bg);
+  color: var(--cb-text);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Status cue classes — color + non-color cue, always paired (Section 11) */
+.cue-healthy { border: 1.5px solid var(--cb-healthy); }
+.cue-warning { border: 1.5px dashed var(--cb-warning); }
+.cue-failed  { border: 3px solid var(--cb-failed); }
+.cue-offline { border: 1.5px dotted var(--cb-offline); }
+
+.text-healthy { color: var(--cb-healthy); }
+.text-warning { color: var(--cb-warning); }
+.text-failed  { color: var(--cb-failed); }
+.text-offline { color: var(--cb-offline); }
+
+.bg-healthy-soft { background: rgba(0, 229, 255, 0.08); }
+.bg-warning-soft { background: rgba(255, 184, 0, 0.10); }
+.bg-failed-soft  { background: rgba(255, 59, 59, 0.12); }
+
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.55); }
+  50%      { box-shadow: 0 0 0 8px rgba(255, 215, 0, 0.0); }
+}
+.focus-first {
+  border: 2.5px solid var(--cb-gold) !important;
+  animation: pulse-gold 1.2s ease-in-out infinite;
+}
+
+@keyframes edge-dash {
+  to { stroke-dashoffset: -24; }
+}
+.cascade-edge path.react-flow__edge-path {
+  stroke: var(--cb-failed);
+  stroke-width: 3;
+  stroke-dasharray: 8 6;
+  animation: edge-dash 0.9s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 59, 59, 0.7));
+}
+
+/* 300-500ms state transitions on graph nodes (Section 11) */
+.node-card {
+  transition: border-color 400ms ease, background-color 400ms ease,
+              box-shadow 400ms ease, transform 300ms ease;
+}
+.node-card:hover { transform: translateY(-2px); }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #232B3D; border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }

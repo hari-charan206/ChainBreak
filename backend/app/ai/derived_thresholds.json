@@ -1,0 +1,861 @@
+{
+  "source_dataset": "attack.csv",
+  "rows": 54621,
+  "excluded_actuator_columns": [
+    "P202",
+    "P301",
+    "P401",
+    "P403",
+    "P404",
+    "P502",
+    "P601",
+    "P603"
+  ],
+  "locked_demo_window": "2015-12-28 11:22:00",
+  "replay_multiplier": 30,
+  "method": {
+    "quiet_baseline": "lowest-variance 10% of 5-minute rolling windows over continuous tags; pinned/flatlined windows rejected (Section 5.2 steps 1-3)",
+    "anomaly_model": "IsolationForest(contamination=0.05, n_estimators=200) over all continuous tags; min-max normalized score",
+    "if_cutpoints": "warning >= P97.5, failure >= P99.0 of the normalized score (fixed, consistent)",
+    "operational_baseline": "per-tag mean/std/slope from the first 60s of the locked demo window; sigma_eff = max(std, 1%|mean|, |slope|*60s); warning > 2 sigma, failure > 4 sigma, sustained 5s (disclosed semi-synthetic fallback, Section 5.2 step 7)",
+    "honesty_note": "attack.csv has no Normal rows (all 54,621 labeled Attack) and no all-healthy window exists in the file; operational baselines make the demo's healthy opening state real data, and downstream N4-N6 propagation is the model's prediction (synthetic:true), not raw sensor coincidence"
+  },
+  "if_score_warning_cutpoint": 0.801869,
+  "if_score_failure_cutpoint": 0.881252,
+  "if_score_norm": [
+    -0.179933,
+    0.159277
+  ],
+  "if_fired_rows": 1366,
+  "if_feature_columns": [
+    "FIT101",
+    "LIT101",
+    "AIT201",
+    "AIT202",
+    "AIT203",
+    "FIT201",
+    "DPIT301",
+    "FIT301",
+    "LIT301",
+    "AIT401",
+    "AIT402",
+    "FIT401",
+    "LIT401",
+    "UV401",
+    "AIT501",
+    "AIT502",
+    "AIT503",
+    "AIT504",
+    "FIT501",
+    "FIT502",
+    "FIT503",
+    "FIT504",
+    "PIT501",
+    "PIT502",
+    "PIT503",
+    "FIT601"
+  ],
+  "validation": {
+    "scope": "Model accuracy shown for the demonstrated subsystem (Stage 3 sensors, locked demo window 2015-12-28 11:22-11:28)",
+    "precision": 0.9904,
+    "recall": 1.0,
+    "tp": 308,
+    "fp": 3,
+    "fn": 0,
+    "truth_interval": [
+      "2015-12-28 11:23:15",
+      "2015-12-28 11:28:22"
+    ],
+    "truth_basis": "manually verified attack-effect onset (Section 5.2 step 6): DPIT301 collapse + FIT301 flow cut",
+    "full_dataset_available": true,
+    "full_dataset_note": "attack.csv has no Normal labels; the full-file fact below is the Isolation Forest firing rate (2.5% of rows), not precision/recall. Available on request."
+  },
+  "quiet_baselines": {
+    "FIT101": {
+      "baseline_mean": 2.5451,
+      "baseline_std": 0.0514,
+      "threshold_warning": 2.6478,
+      "threshold_failure": 2.7506
+    },
+    "LIT101": {
+      "baseline_mean": 813.5838,
+      "baseline_std": 0.3746,
+      "threshold_warning": 814.3331,
+      "threshold_failure": 815.0823
+    },
+    "AIT201": {
+      "baseline_mean": 203.2353,
+      "baseline_std": 0.021,
+      "threshold_warning": 203.2773,
+      "threshold_failure": 203.3193
+    },
+    "AIT202": {
+      "baseline_mean": 8.5262,
+      "baseline_std": 0.0014,
+      "threshold_warning": 8.5291,
+      "threshold_failure": 8.5319
+    },
+    "AIT203": {
+      "baseline_mean": 356.4106,
+      "baseline_std": 0.0663,
+      "threshold_warning": 356.5431,
+      "threshold_failure": 356.6756
+    },
+    "FIT201": {
+      "baseline_mean": 2.4365,
+      "baseline_std": 0.0017,
+      "threshold_warning": 2.4398,
+      "threshold_failure": 2.4431
+    },
+    "DPIT301": {
+      "baseline_mean": 2.0099,
+      "baseline_std": 0.0022,
+      "threshold_warning": 2.0144,
+      "threshold_failure": 2.0189
+    },
+    "FIT301": {
+      "baseline_mean": 0.179,
+      "baseline_std": 0.0002,
+      "threshold_warning": 0.1794,
+      "threshold_failure": 0.1797
+    },
+    "LIT301": {
+      "baseline_mean": 1014.3688,
+      "baseline_std": 0.2929,
+      "threshold_warning": 1014.9545,
+      "threshold_failure": 1015.5403
+    },
+    "AIT401": {
+      "baseline_mean": 148.8073,
+      "baseline_std": 0.0014,
+      "threshold_warning": 148.8101,
+      "threshold_failure": 148.8129
+    },
+    "AIT402": {
+      "baseline_mean": 331.1571,
+      "baseline_std": 0.0769,
+      "threshold_warning": 331.311,
+      "threshold_failure": 331.4649
+    },
+    "FIT401": {
+      "baseline_mean": 1.7162,
+      "baseline_std": 0.0017,
+      "threshold_warning": 1.7196,
+      "threshold_failure": 1.723
+    },
+    "LIT401": {
+      "baseline_mean": 247.5914,
+      "baseline_std": 0.4612,
+      "threshold_warning": 248.5138,
+      "threshold_failure": 249.4363
+    },
+    "UV401": {
+      "baseline_mean": 1.9667,
+      "baseline_std": 0.1783,
+      "threshold_warning": 2.3232,
+      "threshold_failure": 2.6798
+    },
+    "AIT501": {
+      "baseline_mean": 7.6502,
+      "baseline_std": 0.0006,
+      "threshold_warning": 7.6514,
+      "threshold_failure": 7.6526
+    },
+    "AIT502": {
+      "baseline_mean": 203.621,
+      "baseline_std": 0.1076,
+      "threshold_warning": 203.8362,
+      "threshold_failure": 204.0514
+    },
+    "AIT503": {
+      "baseline_mean": 268.1596,
+      "baseline_std": 0.0198,
+      "threshold_warning": 268.1992,
+      "threshold_failure": 268.2389
+    },
+    "AIT504": {
+      "baseline_mean": 15.3297,
+      "baseline_std": 0.0261,
+      "threshold_warning": 15.3818,
+      "threshold_failure": 15.434
+    },
+    "FIT501": {
+      "baseline_mean": 0.0009,
+      "baseline_std": 0.0001,
+      "threshold_warning": 0.0011,
+      "threshold_failure": 0.0012
+    },
+    "FIT502": {
+      "baseline_mean": 0.0011,
+      "baseline_std": 0.0001,
+      "threshold_warning": 0.0013,
+      "threshold_failure": 0.0015
+    },
+    "FIT503": {
+      "baseline_mean": 0.0138,
+      "baseline_std": 0.0001,
+      "threshold_warning": 0.0139,
+      "threshold_failure": 0.014
+    },
+    "FIT504": {
+      "baseline_mean": 0.131,
+      "baseline_std": 0.0002,
+      "threshold_warning": 0.1315,
+      "threshold_failure": 0.1319
+    },
+    "PIT501": {
+      "baseline_mean": 9.9777,
+      "baseline_std": 0.0119,
+      "threshold_warning": 10.0016,
+      "threshold_failure": 10.0254
+    },
+    "PIT502": {
+      "baseline_mean": 1.2783,
+      "baseline_std": 0.0202,
+      "threshold_warning": 1.3187,
+      "threshold_failure": 1.359
+    },
+    "PIT503": {
+      "baseline_mean": 3.6478,
+      "baseline_std": 0.0107,
+      "threshold_warning": 3.6692,
+      "threshold_failure": 3.6907
+    },
+    "FIT601": {
+      "baseline_mean": 0.0,
+      "baseline_std": 0.0,
+      "threshold_warning": 0.0,
+      "threshold_failure": 0.0001
+    }
+  },
+  "operational_baselines": {
+    "FIT101": {
+      "node_id": "N1",
+      "mean": 2.5401,
+      "sigma": 0.07469489,
+      "raw_std": 0.07469489,
+      "slope_per_s": 0.00072,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "LIT101": {
+      "node_id": "N1",
+      "mean": 619.999,
+      "sigma": 56.52236732,
+      "raw_std": 16.31662411,
+      "slope_per_s": 0.94204,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "MV101": {
+      "node_id": "N1",
+      "mean": 2.0,
+      "sigma": 0.5,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P101": {
+      "node_id": "N1",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P102": {
+      "node_id": "N1",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "AIT201": {
+      "node_id": "N2",
+      "mean": 263.3299,
+      "sigma": 2.633299,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "AIT202": {
+      "node_id": "N2",
+      "mean": 8.4465,
+      "sigma": 0.08446478,
+      "raw_std": 0.00061687,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "AIT203": {
+      "node_id": "N2",
+      "mean": 316.6906,
+      "sigma": 3.16690582,
+      "raw_std": 0.13937563,
+      "slope_per_s": 0.00638,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "FIT201": {
+      "node_id": "N2",
+      "mean": 0.0,
+      "sigma": 0.0,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "MV201": {
+      "node_id": "N2",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P201": {
+      "node_id": "N2",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P202": {
+      "node_id": "N2",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P203": {
+      "node_id": "N2",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P204": {
+      "node_id": "N2",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P205": {
+      "node_id": "N2",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P206": {
+      "node_id": "N2",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "DPIT301": {
+      "node_id": "N3",
+      "mean": 19.7002,
+      "sigma": 0.19700151,
+      "raw_std": 0.05191969,
+      "slope_per_s": -0.00175,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "FIT301": {
+      "node_id": "N3",
+      "mean": 2.2114,
+      "sigma": 0.02211417,
+      "raw_std": 0.00161854,
+      "slope_per_s": -3e-05,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "LIT301": {
+      "node_id": "N3",
+      "mean": 890.9434,
+      "sigma": 26.58317388,
+      "raw_std": 7.68005172,
+      "slope_per_s": -0.44305,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "MV301": {
+      "node_id": "N3",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "MV302": {
+      "node_id": "N3",
+      "mean": 2.0,
+      "sigma": 0.5,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "MV303": {
+      "node_id": "N3",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "MV304": {
+      "node_id": "N3",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P301": {
+      "node_id": "N3",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P302": {
+      "node_id": "N3",
+      "mean": 2.0,
+      "sigma": 0.5,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "AIT401": {
+      "node_id": "N4",
+      "mean": 148.808,
+      "sigma": 1.48808,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "AIT402": {
+      "node_id": "N4",
+      "mean": 155.1854,
+      "sigma": 1.5518544,
+      "raw_std": 0.08079332,
+      "slope_per_s": 0.00066,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "FIT401": {
+      "node_id": "N4",
+      "mean": 1.7194,
+      "sigma": 0.01719388,
+      "raw_std": 0.00288084,
+      "slope_per_s": -7e-05,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "LIT401": {
+      "node_id": "N4",
+      "mean": 996.8809,
+      "sigma": 9.96880937,
+      "raw_std": 1.49715431,
+      "slope_per_s": 0.07942,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P401": {
+      "node_id": "N4",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P402": {
+      "node_id": "N4",
+      "mean": 2.0,
+      "sigma": 0.02,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P403": {
+      "node_id": "N4",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P404": {
+      "node_id": "N4",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "UV401": {
+      "node_id": "N4",
+      "mean": 2.0,
+      "sigma": 0.02,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "AIT501": {
+      "node_id": "N5",
+      "mean": 7.8801,
+      "sigma": 0.07880079,
+      "raw_std": 0.00062855,
+      "slope_per_s": 1e-05,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "AIT502": {
+      "node_id": "N5",
+      "mean": 144.5715,
+      "sigma": 1.44571467,
+      "raw_std": 0.1465226,
+      "slope_per_s": -0.00654,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "AIT503": {
+      "node_id": "N5",
+      "mean": 263.9067,
+      "sigma": 2.639067,
+      "raw_std": 0.0641,
+      "slope_per_s": -0.00321,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "AIT504": {
+      "node_id": "N5",
+      "mean": 12.2699,
+      "sigma": 0.1226993,
+      "raw_std": 0.0943704,
+      "slope_per_s": -0.00043,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "FIT501": {
+      "node_id": "N5",
+      "mean": 1.7302,
+      "sigma": 0.01730217,
+      "raw_std": 0.00235316,
+      "slope_per_s": -8e-05,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "FIT502": {
+      "node_id": "N5",
+      "mean": 1.2826,
+      "sigma": 0.01479798,
+      "raw_std": 0.01479798,
+      "slope_per_s": 0.0001,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "FIT503": {
+      "node_id": "N5",
+      "mean": 0.7353,
+      "sigma": 0.00735269,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "FIT504": {
+      "node_id": "N5",
+      "mean": 0.3078,
+      "sigma": 0.00307769,
+      "raw_std": 0.00080965,
+      "slope_per_s": 2e-05,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P501": {
+      "node_id": "N5",
+      "mean": 2.0,
+      "sigma": 0.02,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P502": {
+      "node_id": "N5",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "PIT501": {
+      "node_id": "N5",
+      "mean": 249.8003,
+      "sigma": 2.49800263,
+      "raw_std": 0.25667717,
+      "slope_per_s": -0.00323,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "PIT502": {
+      "node_id": "N5",
+      "mean": 1.6951,
+      "sigma": 0.11128232,
+      "raw_std": 0.05583619,
+      "slope_per_s": 0.00185,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "PIT503": {
+      "node_id": "N5",
+      "mean": 188.6909,
+      "sigma": 1.88690942,
+      "raw_std": 0.21224622,
+      "slope_per_s": -0.00268,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "FIT601": {
+      "node_id": "N6",
+      "mean": 0.0003,
+      "sigma": 6.408e-05,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P601": {
+      "node_id": "N6",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P602": {
+      "node_id": "N6",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    },
+    "P603": {
+      "node_id": "N6",
+      "mean": 1.0,
+      "sigma": 0.01,
+      "raw_std": 0.0,
+      "slope_per_s": 0.0,
+      "warn_sigma": 2.0,
+      "fail_sigma": 4.0,
+      "sustain_seconds": 5
+    }
+  },
+  "node_tag_map": {
+    "N1": [
+      "FIT101",
+      "LIT101",
+      "MV101",
+      "P101",
+      "P102"
+    ],
+    "N2": [
+      "AIT201",
+      "AIT202",
+      "AIT203",
+      "FIT201",
+      "MV201",
+      "P201",
+      "P202",
+      "P203",
+      "P204",
+      "P205",
+      "P206"
+    ],
+    "N3": [
+      "DPIT301",
+      "FIT301",
+      "LIT301",
+      "MV301",
+      "MV302",
+      "MV303",
+      "MV304",
+      "P301",
+      "P302"
+    ],
+    "N4": [
+      "AIT401",
+      "AIT402",
+      "FIT401",
+      "LIT401",
+      "P401",
+      "P402",
+      "P403",
+      "P404",
+      "UV401"
+    ],
+    "N5": [
+      "AIT501",
+      "AIT502",
+      "AIT503",
+      "AIT504",
+      "FIT501",
+      "FIT502",
+      "FIT503",
+      "FIT504",
+      "P501",
+      "P502",
+      "PIT501",
+      "PIT502",
+      "PIT503"
+    ],
+    "N6": [
+      "FIT601",
+      "P601",
+      "P602",
+      "P603"
+    ]
+  },
+  "tag_node_map": {
+    "FIT101": "N1",
+    "LIT101": "N1",
+    "MV101": "N1",
+    "P101": "N1",
+    "P102": "N1",
+    "AIT201": "N2",
+    "AIT202": "N2",
+    "AIT203": "N2",
+    "FIT201": "N2",
+    "MV201": "N2",
+    "P201": "N2",
+    "P202": "N2",
+    "P203": "N2",
+    "P204": "N2",
+    "P205": "N2",
+    "P206": "N2",
+    "DPIT301": "N3",
+    "FIT301": "N3",
+    "LIT301": "N3",
+    "MV301": "N3",
+    "MV302": "N3",
+    "MV303": "N3",
+    "MV304": "N3",
+    "P301": "N3",
+    "P302": "N3",
+    "AIT401": "N4",
+    "AIT402": "N4",
+    "FIT401": "N4",
+    "LIT401": "N4",
+    "P401": "N4",
+    "P402": "N4",
+    "P403": "N4",
+    "P404": "N4",
+    "UV401": "N4",
+    "AIT501": "N5",
+    "AIT502": "N5",
+    "AIT503": "N5",
+    "AIT504": "N5",
+    "FIT501": "N5",
+    "FIT502": "N5",
+    "FIT503": "N5",
+    "FIT504": "N5",
+    "P501": "N5",
+    "P502": "N5",
+    "PIT501": "N5",
+    "PIT502": "N5",
+    "PIT503": "N5",
+    "FIT601": "N6",
+    "P601": "N6",
+    "P602": "N6",
+    "P603": "N6"
+  }
+}
