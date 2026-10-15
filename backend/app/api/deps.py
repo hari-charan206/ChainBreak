@@ -38,4 +38,3 @@ def get_owned_environment(environment_id: int,
         # 404, not 403: do not reveal other users' environments exist
         raise HTTPException(status_code=404, detail="environment not found")
     return env
-#check at last
