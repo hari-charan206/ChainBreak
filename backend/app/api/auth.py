@@ -47,5 +47,5 @@ def logout():
 def _session(user: dict) -> dict:
     return {
         "token": create_token(user["id"]),
-        "user": {"id": user["id"], "email": user["email"]}, #credentials
+        "user": {"id": user["id"], "email": user["email"]},
     }
