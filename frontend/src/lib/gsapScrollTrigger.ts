@@ -36,4 +36,3 @@ export function syncLenisWithGsap(lenis: Lenis): () => void {
     lenis.off?.("scroll", ScrollTrigger.update);
   };
 }
-//dddadwwdqwda
