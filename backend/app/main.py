@@ -16,6 +16,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+
 from app.api import auth as auth_api
 from app.api import environments as env_api
 from app.db import init_db
