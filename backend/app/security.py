@@ -20,6 +20,7 @@ JWT_ALGORITHM = "HS256"
 TOKEN_TTL_SECONDS = 7 * 24 * 3600  # 7 days
 
 
+
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"),
                          bcrypt.gensalt()).decode("ascii")
