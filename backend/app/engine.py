@@ -21,8 +21,6 @@ from app.models import sensor_bindings as bindings_model
 from app.db import get_conn
 
 
-
-
 def _last_updated_by_binding(environment_id: int) -> dict[int, str]:
     rows = get_conn().execute(
         """
