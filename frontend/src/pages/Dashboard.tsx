@@ -11,6 +11,7 @@ import { ValidationMetrics } from "../components/ValidationMetrics/ValidationMet
 
 const POLL_MS = 2000; // contract: ~2s, no faster (Section 13)
 
+//Live values arrive only from Wokwi
 // Dashboard (Section 5.5): existing components, now parameterized by
 // :environmentId. Live values arrive only via Wokwi -> MQTT -> backend ->
 // this 2s poll. There is NO simulate-failure or replay control anywhere —
