@@ -13,7 +13,6 @@ Frozen rules implemented here:
 
 from __future__ import annotations
 
-
 import sqlite3
 import threading
 from pathlib import Path
@@ -115,5 +114,3 @@ def init_db() -> None:
         """
     )
     conn.commit()
-
-#iwantto
