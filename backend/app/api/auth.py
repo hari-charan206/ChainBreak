@@ -40,7 +40,6 @@ def login(req: AuthRequest):
 @router.post("/logout")
 def logout():
     # Stateless JWT: the client discards the token. Kept as an endpoint for
-    # API symmetry with Section 9.1.
     return {"ok": True}
 
 
@@ -49,3 +48,4 @@ def _session(user: dict) -> dict:
         "token": create_token(user["id"]),
         "user": {"id": user["id"], "email": user["email"]},
     }
+
